@@ -92,7 +92,7 @@ export default async function StreakDetailPage({ params }: PageProps) {
         <h1 className="text-base text-muted">{streak.name}</h1>
         <div className="mt-2 flex items-baseline gap-3">
           <span
-            className={`serif text-8xl leading-none ${
+            className={`text-8xl font-medium leading-none tracking-tight ${
               checkedIn ? "text-accent" : "text-foreground"
             }`}
           >
@@ -120,7 +120,7 @@ export default async function StreakDetailPage({ params }: PageProps) {
 
       <div className="mt-10 rounded-3xl border border-border bg-card p-6">
         <div className="mb-4 flex items-baseline justify-between">
-          <h3 className="serif text-2xl">{monthName}</h3>
+          <h3 className="text-xl font-semibold tracking-tight">{monthName}</h3>
           <span className="text-xs text-muted">{now.getFullYear()}</span>
         </div>
         <MonthCalendar
@@ -140,7 +140,7 @@ export default async function StreakDetailPage({ params }: PageProps) {
                 className="flex items-baseline justify-between"
               >
                 <span>{p.name}</span>
-                <span className="serif text-2xl text-foreground">
+                <span className="text-2xl font-bold tabular-nums text-foreground">
                   {p.count}
                 </span>
               </li>

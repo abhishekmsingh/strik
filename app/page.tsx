@@ -60,7 +60,7 @@ export default async function Home() {
     <main className="flex flex-1 flex-col">
       <header className="mb-10 flex items-baseline justify-between">
         <div>
-          <h1 className="serif text-4xl tracking-tight">strik</h1>
+          <h1 className="text-4xl font-semibold tracking-tight">strik</h1>
           <p className="mt-1 text-sm text-muted">
             {profiles.get(user.id) ?? "you"}
           </p>
@@ -116,7 +116,7 @@ function buildPeers(
 function EmptyState({ displayName }: { displayName: string | null }) {
   return (
     <main className="flex flex-1 flex-col justify-center">
-      <h1 className="serif text-4xl tracking-tight">strik</h1>
+      <h1 className="text-4xl font-semibold tracking-tight">strik</h1>
       <p className="mt-2 text-muted">
         {displayName ? `hi ${displayName}.` : "welcome."} no streaks yet.
       </p>

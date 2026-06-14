@@ -35,7 +35,7 @@ export default async function JoinStreakPage({ params }: PageProps) {
   if (mine) {
     return (
       <main className="flex flex-1 flex-col justify-center">
-        <h1 className="serif text-3xl">already in</h1>
+        <h1 className="text-3xl font-bold tracking-tight">already in</h1>
         <p className="mt-2 text-muted">
           you&apos;re already tracking this streak.
         </p>
@@ -52,7 +52,7 @@ export default async function JoinStreakPage({ params }: PageProps) {
   if (!streakInGroup) {
     return (
       <main className="flex flex-1 flex-col justify-center">
-        <h1 className="serif text-3xl">link not found</h1>
+        <h1 className="text-3xl font-bold tracking-tight">link not found</h1>
         <p className="mt-2 text-muted">
           this streak doesn&apos;t exist, or the owner needs to share it from
           their app first.
@@ -72,7 +72,7 @@ export default async function JoinStreakPage({ params }: PageProps) {
   return (
     <main className="flex flex-1 flex-col justify-center">
       <p className="text-sm text-muted">a friend invited you to</p>
-      <h1 className="serif mt-2 text-4xl tracking-tight">
+      <h1 className="mt-2 text-4xl font-bold tracking-tight">
         {streakInGroup.name}
       </h1>
       <p className="mt-4 text-sm text-muted">

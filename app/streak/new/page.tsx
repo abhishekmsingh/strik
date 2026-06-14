@@ -10,7 +10,7 @@ export default function NewStreakPage() {
       </Link>
 
       <div className="mt-10">
-        <h1 className="serif text-4xl tracking-tight">new streak</h1>
+        <h1 className="text-4xl font-bold tracking-tight">new streak</h1>
         <p className="mt-2 text-muted">one thing. one tap a day.</p>
       </div>
 

@@ -34,7 +34,7 @@ export function StreakCard({
 
         <div className="mt-6 flex items-baseline gap-3">
           <span
-            className={`serif text-7xl leading-none ${
+            className={`text-7xl font-medium leading-none tracking-tight tabular-nums ${
               checkedIn ? "text-accent" : "text-foreground"
             }`}
           >
@@ -58,7 +58,7 @@ export function StreakCard({
               className={p.is_self ? "text-foreground" : "text-muted"}
             >
               {p.display_name}{" "}
-              <span className="serif text-base">{p.count}</span>
+              <span className="font-semibold tabular-nums">{p.count}</span>
             </span>
           ))}
         </div>

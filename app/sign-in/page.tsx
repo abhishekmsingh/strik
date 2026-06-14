@@ -41,13 +41,13 @@ export default async function SignInPage({
   return (
     <main className="flex flex-1 flex-col justify-center">
       <div className="mb-12">
-        <h1 className="serif text-5xl tracking-tight">strik</h1>
+        <h1 className="text-5xl font-semibold tracking-tight">strik</h1>
         <p className="mt-2 text-muted">show up. tap once. keep the chain.</p>
       </div>
 
       {sent ? (
         <div className="rounded-2xl border border-border bg-card p-6">
-          <p className="serif text-2xl">check your email</p>
+          <p className="text-2xl font-semibold tracking-tight">check your email</p>
           <p className="mt-2 text-sm text-muted">
             we sent you a sign-in link.
           </p>
