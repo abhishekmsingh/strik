@@ -29,10 +29,20 @@ const maskableSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox
         font-size="300" font-weight="400" text-anchor="middle" fill="#fbfaf7">&amp;</text>
 </svg>`);
 
+// Android requires the status-bar notification icon (the "badge") to be a
+// solid-white silhouette on a transparent background. Anything else gets
+// rendered as a generic square. Same glyph, no background, pure white.
+const badgeSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <text x="48" y="74" font-family='${SERIF}'
+        font-size="86" font-weight="400" text-anchor="middle" fill="#ffffff">&amp;</text>
+</svg>`);
+
 const outputs = [
   { src: anySvg, size: 192, file: "public/icons/icon-192.png" },
   { src: anySvg, size: 512, file: "public/icons/icon-512.png" },
   { src: maskableSvg, size: 512, file: "public/icons/icon-maskable-512.png" },
+  // status-bar badge for Android push notifications (monochrome, transparent)
+  { src: badgeSvg, size: 96, file: "public/icons/badge-96.png" },
   // app/icon.png and app/apple-icon.png are auto-linked by Next.js metadata.
   { src: anySvg, size: 512, file: "app/icon.png" },
   { src: anySvg, size: 180, file: "app/apple-icon.png" },

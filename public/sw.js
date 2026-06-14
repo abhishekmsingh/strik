@@ -29,7 +29,9 @@ self.addEventListener("push", (event) => {
   const options = {
     body: payload.body || "",
     icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
+    // Android status-bar icon: must be a monochrome silhouette with a
+    // transparent background, otherwise it falls back to a generic square.
+    badge: "/icons/badge-96.png",
     data: { url: payload.url || "/" },
     tag: payload.tag || undefined,
     renotify: !!payload.tag,
