@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  /* warm off-white canvas, never stark */
-  --background: #faf8f3;
+  /* near-white canvas, faintest warm tint */
+  --background: #fbfaf7;
   --foreground: #1a1a1a;
   --muted: #6b6862;
   --card: #ffffff;
-  --border: #ece7db;
-  --subtle: #f3eee2;
-  /* single warm accent — amber */
-  --accent: #c2570c;
-  --accent-soft: #fbe9d0;
+  --border: #ebe8e1;
+  --subtle: #f3efe6;
+  /* deep lavender for primary action, light lavender for soft states */
+  --accent: #5941a9;
+  --accent-soft: #beb8eb;
   --accent-foreground: #ffffff;
 }
 
