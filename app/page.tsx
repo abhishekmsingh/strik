@@ -1,65 +1,136 @@
-import Image from "next/image";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { StreakCard, type PeerProgress } from "@/components/streak-card";
+import { signOut } from "./sign-in/actions";
+import { currentStreak, type StreakLog } from "@/lib/streak";
 
-export default function Home() {
+type StreakRow = {
+  id: string;
+  name: string;
+  freezes_per_month: number;
+  shared_streak_id: string;
+  owner_id: string;
+};
+
+type LogRow = StreakLog & { streak_id: string };
+
+type ProfileRow = { id: string; display_name: string };
+
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  // middleware guarantees user, but TS doesn't know that.
+  if (!user) return null;
+
+  // All streaks visible to me (own + co-enrolled, per RLS).
+  const { data: streaksData } = await supabase
+    .from("streaks")
+    .select("id, name, freezes_per_month, shared_streak_id, owner_id")
+    .is("archived_at", null)
+    .order("created_at", { ascending: true });
+  const allStreaks = (streaksData ?? []) as StreakRow[];
+
+  const myStreaks = allStreaks.filter((s) => s.owner_id === user.id);
+
+  if (myStreaks.length === 0) {
+    return <EmptyState displayName={null} />;
+  }
+
+  // Fetch all logs for visible streaks (RLS filters automatically).
+  const streakIds = allStreaks.map((s) => s.id);
+  const { data: logsData } = await supabase
+    .from("streak_logs")
+    .select("streak_id, log_date, status")
+    .in("streak_id", streakIds);
+  const allLogs = (logsData ?? []) as LogRow[];
+
+  // Profiles for peer display names.
+  const ownerIds = Array.from(new Set(allStreaks.map((s) => s.owner_id)));
+  const { data: profilesData } = await supabase
+    .from("profiles")
+    .select("id, display_name")
+    .in("id", ownerIds);
+  const profiles = new Map(
+    ((profilesData ?? []) as ProfileRow[]).map((p) => [p.id, p.display_name]),
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="flex flex-1 flex-col">
+      <header className="mb-10 flex items-baseline justify-between">
+        <div>
+          <h1 className="serif text-4xl tracking-tight">strik</h1>
+          <p className="mt-1 text-sm text-muted">
+            {profiles.get(user.id) ?? "you"}
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        <form action={signOut}>
+          <button className="text-xs text-muted hover:text-foreground">
+            sign out
+          </button>
+        </form>
+      </header>
+
+      <div className="flex flex-col gap-4">
+        {myStreaks.map((s) => {
+          const myLogs = allLogs.filter((l) => l.streak_id === s.id);
+          const peers = buildPeers(s, allStreaks, allLogs, profiles, user.id);
+          return (
+            <StreakCard key={s.id} streak={s} logs={myLogs} peers={peers} />
+          );
+        })}
+
+        <Link
+          href="/streak/new"
+          className="mt-2 flex h-14 items-center justify-center rounded-3xl border border-dashed border-border text-sm text-muted transition hover:border-foreground/30 hover:text-foreground"
+        >
+          + new streak
+        </Link>
+      </div>
+    </main>
+  );
+}
+
+function buildPeers(
+  myStreak: StreakRow,
+  allStreaks: StreakRow[],
+  allLogs: LogRow[],
+  profiles: Map<string, string>,
+  selfId: string,
+): PeerProgress[] {
+  const peerStreaks = allStreaks.filter(
+    (s) => s.shared_streak_id === myStreak.shared_streak_id,
+  );
+  if (peerStreaks.length <= 1) return [];
+  return peerStreaks.map((s) => {
+    const logs = allLogs.filter((l) => l.streak_id === s.id);
+    return {
+      display_name: profiles.get(s.owner_id) ?? "?",
+      count: currentStreak(logs),
+      is_self: s.owner_id === selfId,
+    };
+  });
+}
+
+function EmptyState({ displayName }: { displayName: string | null }) {
+  return (
+    <main className="flex flex-1 flex-col justify-center">
+      <h1 className="serif text-4xl tracking-tight">strik</h1>
+      <p className="mt-2 text-muted">
+        {displayName ? `hi ${displayName}.` : "welcome."} no streaks yet.
+      </p>
+      <Link
+        href="/streak/new"
+        className="mt-10 flex h-14 items-center justify-center rounded-2xl bg-foreground text-base font-medium text-background transition hover:opacity-90"
+      >
+        start your first streak
+      </Link>
+      <form action={signOut} className="mt-6 text-center">
+        <button className="text-xs text-muted hover:text-foreground">
+          sign out
+        </button>
+      </form>
+    </main>
   );
 }
