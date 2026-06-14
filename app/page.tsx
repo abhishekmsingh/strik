@@ -2,7 +2,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { StreakCard, type PeerProgress } from "@/components/streak-card";
 import { PushBanner } from "@/components/push-banner";
-import { PushTestButton } from "@/components/push-test-button";
 import { signOut } from "./sign-in/actions";
 import { currentStreak, type StreakLog } from "@/lib/streak";
 
@@ -73,14 +72,11 @@ export default async function Home() {
             {profiles.get(user.id) ?? "you"}
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          {pushEndpoints.length > 0 && <PushTestButton />}
-          <form action={signOut}>
-            <button className="text-xs text-muted hover:text-foreground">
-              sign out
-            </button>
-          </form>
-        </div>
+        <form action={signOut}>
+          <button className="text-xs text-muted hover:text-foreground">
+            sign out
+          </button>
+        </form>
       </header>
 
       <PushBanner subscribedEndpoints={pushEndpoints} />
