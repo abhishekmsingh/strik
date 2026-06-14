@@ -8,8 +8,10 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * skip static assets and image optimization endpoints
+     * Skip static assets, Next-generated icons/manifest, and the SW.
+     * These must be reachable without auth so the PWA can install and
+     * the browser can fetch its favicon / apple-touch-icon.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|manifest.webmanifest|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js)$).*)",
   ],
 };
