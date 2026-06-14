@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { logToday } from "@/app/actions/log";
+import { Dots } from "./dots";
 
 export function LogTodayButton({
   streakId,
@@ -29,10 +30,18 @@ export function LogTodayButton({
           await logToday(streakId);
         })
       }
-      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-base font-medium text-accent-foreground transition hover:opacity-95 active:scale-[.99] disabled:opacity-60"
+      className={`flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-base font-medium text-accent-foreground transition hover:opacity-95 active:scale-[.99] disabled:opacity-80 ${
+        pending ? "cursor-progress" : ""
+      }`}
     >
-      <span className="text-lg leading-none">✓</span>
-      {pending ? "saving…" : "did it today"}
+      {pending ? (
+        <Dots />
+      ) : (
+        <>
+          <span className="text-lg leading-none">✓</span>
+          did it today
+        </>
+      )}
     </button>
   );
 }

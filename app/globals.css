@@ -42,3 +42,31 @@ body {
   font-family: var(--font-serif), "Iowan Old Style", "Apple Garamond", Georgia, serif;
   font-feature-settings: "lnum" 1;
 }
+
+@keyframes strik-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+@keyframes strik-shimmer {
+  0% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+
+.skeleton {
+  background: var(--subtle);
+  animation: strik-shimmer 1.4s ease-in-out infinite;
+}

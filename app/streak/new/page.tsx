@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createStreak } from "./actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export default function NewStreakPage() {
   return (
@@ -74,12 +75,9 @@ export default function NewStreakPage() {
           </p>
         </div>
 
-        <button
-          type="submit"
-          className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-foreground text-base font-medium text-background transition hover:opacity-90 active:scale-[.99]"
-        >
+        <SubmitButton className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-foreground text-base font-medium text-background transition hover:opacity-90 active:scale-[.99]">
           start the streak
-        </button>
+        </SubmitButton>
       </form>
     </main>
   );

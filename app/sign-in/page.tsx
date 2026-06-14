@@ -1,4 +1,5 @@
 import { signInWithEmail } from "./actions";
+import { SubmitButton } from "@/components/submit-button";
 
 type ErrorCode =
   | "missing_email"
@@ -74,12 +75,9 @@ export default async function SignInPage({
               className="w-full rounded-xl border border-border bg-card px-4 py-3 text-base outline-none transition focus:border-accent"
             />
           </div>
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-foreground px-4 py-3 text-base font-medium text-background transition hover:opacity-90 active:scale-[.99]"
-          >
+          <SubmitButton className="flex h-12 w-full items-center justify-center rounded-xl bg-foreground px-4 text-base font-medium text-background transition hover:opacity-90 active:scale-[.99]">
             send me a link
-          </button>
+          </SubmitButton>
           {errMsg && (
             <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
               {errMsg}

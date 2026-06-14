@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { deleteStreak } from "@/app/streak/[id]/actions";
+import { Dots } from "./dots";
 
 export function DeleteStreakButton({ streakId }: { streakId: string }) {
   const [confirming, setConfirming] = useState(false);
@@ -30,9 +31,11 @@ export function DeleteStreakButton({ streakId }: { streakId: string }) {
             await deleteStreak(streakId);
           })
         }
-        className="rounded-full bg-foreground px-3 py-1 text-background transition hover:opacity-90 disabled:opacity-60"
+        className={`flex min-w-[5rem] items-center justify-center rounded-full bg-foreground px-3 py-1 text-background transition hover:opacity-90 disabled:opacity-80 ${
+          pending ? "cursor-progress" : ""
+        }`}
       >
-        {pending ? "deleting…" : "yes, delete"}
+        {pending ? <Dots /> : "yes, delete"}
       </button>
       <button
         type="button"

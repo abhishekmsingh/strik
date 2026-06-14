@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { joinSharedStreak } from "./actions";
+import { SubmitButton } from "@/components/submit-button";
 
 type PageProps = { params: Promise<{ code: string }> };
 
@@ -80,12 +81,9 @@ export default async function JoinStreakPage({ params }: PageProps) {
       </p>
 
       <form action={joinAction} className="mt-10">
-        <button
-          type="submit"
-          className="flex h-12 w-full items-center justify-center rounded-xl bg-foreground text-base font-medium text-background transition hover:opacity-90"
-        >
+        <SubmitButton className="flex h-12 w-full items-center justify-center rounded-xl bg-foreground text-base font-medium text-background transition hover:opacity-90">
           join the streak
-        </button>
+        </SubmitButton>
       </form>
       <Link
         href="/"
