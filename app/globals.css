@@ -24,9 +24,8 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-accent-foreground: var(--accent-foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-plus-jakarta);
   --font-serif: var(--font-instrument-serif);
-  --font-mono: var(--font-geist-mono);
 }
 
 html,
