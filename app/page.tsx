@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { StreakCard, type PeerProgress } from "@/components/streak-card";
+import { PushBanner } from "@/components/push-banner";
+import { PushTestButton } from "@/components/push-test-button";
 import { signOut } from "./sign-in/actions";
 import { currentStreak, type StreakLog } from "@/lib/streak";
 
@@ -56,6 +58,12 @@ export default async function Home() {
     ((profilesData ?? []) as ProfileRow[]).map((p) => [p.id, p.display_name]),
   );
 
+  const { data: pushSubs } = await supabase
+    .from("push_subscriptions")
+    .select("endpoint")
+    .eq("user_id", user.id);
+  const pushEndpoints = (pushSubs ?? []).map((s) => s.endpoint);
+
   return (
     <main className="flex flex-1 flex-col">
       <header className="mb-10 flex items-baseline justify-between">
@@ -65,12 +73,17 @@ export default async function Home() {
             {profiles.get(user.id) ?? "you"}
           </p>
         </div>
-        <form action={signOut}>
-          <button className="text-xs text-muted hover:text-foreground">
-            sign out
-          </button>
-        </form>
+        <div className="flex items-center gap-4">
+          {pushEndpoints.length > 0 && <PushTestButton />}
+          <form action={signOut}>
+            <button className="text-xs text-muted hover:text-foreground">
+              sign out
+            </button>
+          </form>
+        </div>
       </header>
+
+      <PushBanner subscribedEndpoints={pushEndpoints} />
 
       <div className="flex flex-col gap-4">
         {myStreaks.map((s) => {
