@@ -21,7 +21,15 @@ export async function signInWithEmail(formData: FormData) {
     },
   });
 
-  if (error) redirect("/sign-in?error=send_failed");
+  if (error) {
+    console.error("[sign-in] signInWithOtp failed", {
+      message: error.message,
+      status: error.status,
+      origin,
+      email_domain: email.split("@")[1],
+    });
+    redirect("/sign-in?error=send_failed");
+  }
   redirect("/sign-in?sent=1");
 }
 

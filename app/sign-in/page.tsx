@@ -1,13 +1,41 @@
 import { signInWithEmail } from "./actions";
 
+type ErrorCode =
+  | "missing_email"
+  | "send_failed"
+  | "callback_pkce"
+  | "callback_otp"
+  | "callback_missing"
+  | string;
+
+function errorMessage(code: ErrorCode | null, reason: string | null) {
+  if (!code) return null;
+  switch (code) {
+    case "missing_email":
+      return "please enter your email.";
+    case "send_failed":
+      return "couldn't send the link. try again in a moment.";
+    case "callback_pkce":
+      return "this link only works on the device that requested it. open it on the same phone/laptop, or tap below to send a new one from here.";
+    case "callback_otp":
+      return "this link looks expired or already used. send a fresh one below.";
+    case "callback_missing":
+      return "the link was missing its token. send a new one.";
+    default:
+      return reason ? `something went wrong: ${reason}` : "something went wrong.";
+  }
+}
+
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; error?: string }>;
+  searchParams: Promise<{ sent?: string; error?: string; reason?: string }>;
 }) {
   const params = await searchParams;
   const sent = params.sent === "1";
-  const error = params.error;
+  const error = params.error ?? null;
+  const reason = params.reason ?? null;
+  const errMsg = errorMessage(error, reason);
 
   return (
     <main className="flex flex-1 flex-col justify-center">
@@ -20,7 +48,11 @@ export default async function SignInPage({
         <div className="rounded-2xl border border-border bg-card p-6">
           <p className="serif text-2xl">check your email</p>
           <p className="mt-2 text-sm text-muted">
-            we sent you a sign-in link. tap it from this device to come back.
+            we sent you a sign-in link.
+          </p>
+          <p className="mt-3 rounded-lg bg-subtle px-3 py-2 text-xs text-foreground/70">
+            important: open the link on <span className="font-medium">this same device</span>.
+            magic links don&apos;t work across devices.
           </p>
         </div>
       ) : (
@@ -48,9 +80,9 @@ export default async function SignInPage({
           >
             send me a link
           </button>
-          {error && (
-            <p className="text-sm text-accent">
-              couldn&apos;t send link. try again.
+          {errMsg && (
+            <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
+              {errMsg}
             </p>
           )}
         </form>
