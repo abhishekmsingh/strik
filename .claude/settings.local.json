@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(supabase --version)",
+      "Bash(supabase orgs *)",
+      "Bash(supabase projects *)",
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --no-src-dir --import-alias \"@/*\" --use-npm --turbopack --eslint --yes)",
+      "Bash(mkdir -p /tmp/strik-stash)",
+      "Bash(mv /Users/abhisheksingh/Documents/projects/strik/.supabase-secrets.local /tmp/strik-stash/)",
+      "Bash(mv /Users/abhisheksingh/Documents/projects/strik/supabase /tmp/strik-stash/)"
+    ]
+  }
+}
