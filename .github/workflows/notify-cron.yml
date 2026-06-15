@@ -1,0 +1,34 @@
+name: notify-cron
+
+# Vercel Hobby caps cron at one run per day, so we drive the hourly trigger
+# from GitHub Actions instead. The workflow just curls the cron endpoint
+# with the shared CRON_SECRET; all the timezone fan-out happens server-side.
+
+on:
+  schedule:
+    - cron: "0 * * * *" # every hour at :00 UTC
+  workflow_dispatch: {} # also runnable from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: hit /api/cron/notify
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          ENDPOINT: https://strik-abhiandthetruths-projects.vercel.app/api/cron/notify
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::error::CRON_SECRET is empty — set the repo secret first"
+            exit 1
+          fi
+          body=$(mktemp)
+          status=$(curl -sS -o "$body" -w "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${ENDPOINT}")
+          echo "HTTP ${status}"
+          cat "$body"
+          echo
+          [ "$status" = "200" ] || exit 1
