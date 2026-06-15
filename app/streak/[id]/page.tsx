@@ -102,14 +102,20 @@ export default async function StreakDetailPage({ params }: PageProps) {
             {count === 1 ? "day" : "days"}
           </span>
         </div>
-        {streak.freezes_per_month > 0 && (
-          <p className="mt-3 text-xs text-muted">
-            freezes this month:{" "}
-            <span className="text-foreground">
-              {freezesUsed} / {streak.freezes_per_month}
-            </span>
-          </p>
-        )}
+        <p className="mt-3 text-xs text-muted">
+          reminder at{" "}
+          <span className="text-foreground">
+            {formatHour(streak.reminder_hour)}
+          </span>
+          {streak.freezes_per_month > 0 && (
+            <>
+              {" · "}freezes this month{" "}
+              <span className="text-foreground">
+                {freezesUsed} / {streak.freezes_per_month}
+              </span>
+            </>
+          )}
+        </p>
       </div>
 
       {isOwner && (
@@ -156,4 +162,10 @@ export default async function StreakDetailPage({ params }: PageProps) {
       )}
     </main>
   );
+}
+
+function formatHour(h: number) {
+  const period = h < 12 ? "am" : "pm";
+  const display = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${display}:00 ${period}`;
 }
