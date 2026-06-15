@@ -20,8 +20,6 @@ type State =
   | "ready" // this device is registered and permission is granted
   | "unsupported"; // browser can't do web push
 
-type TestState = "idle" | "sending" | "sent" | "error";
-
 export function PushBanner({
   subscribedEndpoints,
 }: {
@@ -29,7 +27,6 @@ export function PushBanner({
 }) {
   const [state, setState] = useState<State>("checking");
   const [pending, setPending] = useState(false);
-  const [test, setTest] = useState<TestState>("idle");
 
   // Decide which UI to show based on three signals:
   //   1. browser support
@@ -130,49 +127,17 @@ export function PushBanner({
     }
   }
 
-  async function sendTest() {
-    setTest("sending");
-    try {
-      const r = await fetch("/api/push/test", { method: "POST" });
-      if (!r.ok) throw new Error(await r.text());
-      setTest("sent");
-      setTimeout(() => setTest("idle"), 1500);
-    } catch (e) {
-      console.error(e);
-      setTest("error");
-      setTimeout(() => setTest("idle"), 2000);
-    }
+  // Once we're set up and permission is granted, the banner becomes invisible.
+  // No need to nag every page load.
+  if (state === "checking" || state === "unsupported" || state === "ready") {
+    return null;
   }
-
-  if (state === "checking" || state === "unsupported") return null;
 
   if (state === "denied") {
     return (
       <div className="mb-4 rounded-2xl border border-border bg-card p-4 text-sm text-muted">
         notifications are blocked for strik. open your browser or system
         settings and re-allow them to get streak reminders.
-      </div>
-    );
-  }
-
-  if (state === "ready") {
-    return (
-      <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-2 text-sm">
-        <span className="text-muted">reminders are on for this device.</span>
-        <button
-          type="button"
-          onClick={sendTest}
-          disabled={test === "sending"}
-          className="text-xs text-muted hover:text-foreground disabled:opacity-60"
-        >
-          {test === "sending"
-            ? "sending…"
-            : test === "sent"
-              ? "sent ✓"
-              : test === "error"
-                ? "failed"
-                : "send test"}
-        </button>
       </div>
     );
   }
