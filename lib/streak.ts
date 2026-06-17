@@ -5,6 +5,13 @@
  * with status: 'done' | 'freeze' | 'missed'. Streak counts consecutive non-missed
  * days walking backward from today. If today has no log, today is *not yet broken*
  * (the user still has until midnight) — we treat today as a soft boundary.
+ *
+ * Freeze budget (virtual): when walking backward we encounter a "gap day" (no
+ * log row). If the streak has freezes available for that gap's calendar month,
+ * we absorb the gap into the chain and count it as a virtual freeze. The user
+ * never sees these as stored rows — they're computed on read, so changing the
+ * budget rule never needs a backfill. The set of absorbed dates is returned so
+ * the calendar can render them in the soft-lavender freeze style.
  */
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -14,6 +21,12 @@ export type LogStatus = "done" | "freeze" | "missed";
 export type StreakLog = {
   log_date: string; // 'YYYY-MM-DD'
   status: LogStatus;
+};
+
+export type StreakState = {
+  count: number;
+  freezesUsedThisMonth: number;
+  virtuallyFrozenDates: Set<string>;
 };
 
 export function toDateKey(d: Date): string {
@@ -33,55 +46,83 @@ export function yesterdayKey(): string {
   return toDateKey(d);
 }
 
+function monthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 /**
- * Count the current active streak from a list of logs (any order).
- *
- * Rules:
- * - 'done' or 'freeze' extends the chain.
- * - 'missed' breaks the chain.
- * - A gap day (no log) breaks the chain — unless it's today (still in progress).
+ * Walk backward from today, applying virtual freezes to gap days when budget
+ * remains in that gap's calendar month. Returns:
+ *   - count: current streak length
+ *   - freezesUsedThisMonth: freezes consumed in the *current* calendar month
+ *   - virtuallyFrozenDates: dates absorbed by the budget (for visualisation)
  */
-export function currentStreak(logs: StreakLog[]): number {
+export function computeStreakState(
+  logs: StreakLog[],
+  freezesPerMonth: number,
+): StreakState {
   const byDate = new Map<string, LogStatus>();
   for (const l of logs) byDate.set(l.log_date, l.status);
 
   const today = todayKey();
   const cursor = new Date();
 
-  // if today is not yet logged, start counting from yesterday.
+  // Today is in progress — start at yesterday if today not logged.
   if (!byDate.has(today)) {
     cursor.setDate(cursor.getDate() - 1);
   }
+
+  // Per-month budget tracker scoped to this walk.
+  const usedByMonth = new Map<string, number>();
+  const virtuallyFrozen = new Set<string>();
 
   let count = 0;
   for (;;) {
     const key = toDateKey(cursor);
     const status = byDate.get(key);
+
     if (status === "done" || status === "freeze") {
+      // Stored row that extends the chain.
       count += 1;
-      cursor.setDate(cursor.getDate() - 1);
-    } else {
+    } else if (status === "missed") {
+      // Explicit "missed" is a hard break — user-asserted.
       break;
+    } else {
+      // Gap day. Absorb with this gap's month budget if available.
+      const m = monthKey(cursor);
+      const used = usedByMonth.get(m) ?? 0;
+      if (used < freezesPerMonth) {
+        usedByMonth.set(m, used + 1);
+        virtuallyFrozen.add(key);
+        count += 1;
+      } else {
+        break;
+      }
     }
+    cursor.setDate(cursor.getDate() - 1);
   }
-  return count;
+
+  const currentMonth = monthKey(new Date());
+  const freezesUsedThisMonth = usedByMonth.get(currentMonth) ?? 0;
+
+  return { count, freezesUsedThisMonth, virtuallyFrozenDates: virtuallyFrozen };
+}
+
+/**
+ * Convenience wrapper for callsites that only need the count and the freeze
+ * budget isn't material (e.g. an older record that pre-dates freezes). Defaults
+ * to 0 budget so the behavior matches the original walk semantics.
+ */
+export function currentStreak(
+  logs: StreakLog[],
+  freezesPerMonth = 0,
+): number {
+  return computeStreakState(logs, freezesPerMonth).count;
 }
 
 export function loggedToday(logs: StreakLog[]): boolean {
   const t = todayKey();
   return logs.some((l) => l.log_date === t && l.status === "done");
-}
-
-/** Number of freezes used in the current calendar month. */
-export function freezesUsedThisMonth(logs: StreakLog[]): number {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  return logs.filter((l) => {
-    if (l.status !== "freeze") return false;
-    const d = new Date(l.log_date + "T00:00:00");
-    return d.getFullYear() === y && d.getMonth() === m;
-  }).length;
 }
 
 /** Calendar grid for the given month (Sunday-start). Returns 6 weeks. */

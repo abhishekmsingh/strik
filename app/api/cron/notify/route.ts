@@ -7,7 +7,7 @@ import {
   localHourIn,
   type Slot,
 } from "@/lib/notify";
-import { currentStreak, loggedToday, type StreakLog } from "@/lib/streak";
+import { computeStreakState, loggedToday, type StreakLog } from "@/lib/streak";
 
 // web-push uses node:crypto + https
 export const runtime = "nodejs";
@@ -27,6 +27,7 @@ type Streak = {
   owner_id: string;
   name: string;
   reminder_hour: number;
+  freezes_per_month: number;
 };
 
 type LogRow = StreakLog & { streak_id: string };
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
 
   const { data: streaksData } = await supabase
     .from("streaks")
-    .select("id, owner_id, name, reminder_hour")
+    .select("id, owner_id, name, reminder_hour, freezes_per_month")
     .in("owner_id", userIds)
     .is("archived_at", null);
   const streaks = (streaksData ?? []) as Streak[];
@@ -110,7 +111,7 @@ export async function GET(request: Request) {
       const logs = logsByStreak.get(streak.id) ?? [];
       const slot = chooseSlot(hour, streak.reminder_hour, loggedToday(logs));
       if (!slot) continue;
-      const count = currentStreak(logs);
+      const { count } = computeStreakState(logs, streak.freezes_per_month);
       const payload = buildPayload({
         slot,
         streakId: streak.id,

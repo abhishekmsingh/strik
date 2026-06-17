@@ -6,10 +6,14 @@ export function MonthCalendar({
   year,
   monthIdx,
   logs,
+  virtuallyFrozenDates,
 }: {
   year: number;
   monthIdx: number;
   logs: { log_date: string; status: LogStatus }[];
+  // Past gap days that the freeze budget absorbed. We render them like a
+  // stored 'freeze' so the user can see where their budget was spent.
+  virtuallyFrozenDates?: Set<string>;
 }) {
   const byDate = new Map(logs.map((l) => [l.log_date, l.status]));
   const cells = calendarMonth(year, monthIdx);
@@ -26,6 +30,10 @@ export function MonthCalendar({
         {cells.map(({ date, inMonth }, i) => {
           const key = toDateKey(date);
           const status = byDate.get(key);
+          const isVirtualFreeze = virtuallyFrozenDates?.has(key) ?? false;
+          // Treat a virtually-frozen gap day exactly like a stored freeze.
+          const visual: LogStatus | "virtual_freeze" | undefined =
+            status ?? (isVirtualFreeze ? "virtual_freeze" : undefined);
           const isToday = key === todayKey;
           return (
             <div
@@ -33,15 +41,13 @@ export function MonthCalendar({
               className={[
                 "flex aspect-square items-center justify-center rounded-lg text-sm transition",
                 !inMonth ? "text-muted/30" : "",
-                inMonth && !status ? "text-muted" : "",
-                status === "done"
-                  ? "bg-accent text-accent-foreground"
-                  : "",
-                status === "freeze"
+                inMonth && !visual ? "text-muted" : "",
+                visual === "done" ? "bg-accent text-accent-foreground" : "",
+                visual === "freeze" || visual === "virtual_freeze"
                   ? "bg-accent-soft text-accent"
                   : "",
-                status === "missed" ? "bg-subtle text-muted line-through" : "",
-                isToday && !status
+                visual === "missed" ? "bg-subtle text-muted line-through" : "",
+                isToday && !visual
                   ? "ring-2 ring-accent ring-offset-2 ring-offset-card"
                   : "",
               ].join(" ")}

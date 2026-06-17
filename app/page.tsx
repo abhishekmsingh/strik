@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { StreakCard, type PeerProgress } from "@/components/streak-card";
 import { PushBanner } from "@/components/push-banner";
 import { signOut } from "./sign-in/actions";
-import { currentStreak, type StreakLog } from "@/lib/streak";
+import { computeStreakState, type StreakLog } from "@/lib/streak";
 
 type StreakRow = {
   id: string;
@@ -116,7 +116,7 @@ function buildPeers(
     const logs = allLogs.filter((l) => l.streak_id === s.id);
     return {
       display_name: profiles.get(s.owner_id) ?? "?",
-      count: currentStreak(logs),
+      count: computeStreakState(logs, s.freezes_per_month).count,
       is_self: s.owner_id === selfId,
     };
   });

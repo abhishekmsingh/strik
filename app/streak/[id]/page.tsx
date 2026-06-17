@@ -2,8 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
-  currentStreak,
-  freezesUsedThisMonth,
+  computeStreakState,
   loggedToday,
   type StreakLog,
 } from "@/lib/streak";
@@ -39,14 +38,14 @@ export default async function StreakDetailPage({ params }: PageProps) {
     .order("log_date", { ascending: false });
   const logs = (logsData ?? []) as StreakLog[];
 
-  const count = currentStreak(logs);
+  const { count, freezesUsedThisMonth: freezesUsed, virtuallyFrozenDates } =
+    computeStreakState(logs, streak.freezes_per_month);
   const checkedIn = loggedToday(logs);
-  const freezesUsed = freezesUsedThisMonth(logs);
 
   // peers on the shared streak
   const { data: peerStreaks } = await supabase
     .from("streaks")
-    .select("id, owner_id")
+    .select("id, owner_id, freezes_per_month")
     .eq("shared_streak_id", streak.shared_streak_id)
     .neq("owner_id", user.id);
   const peerIds = (peerStreaks ?? []).map((s) => s.owner_id);
@@ -73,7 +72,10 @@ export default async function StreakDetailPage({ params }: PageProps) {
     const ownerName =
       (peerProfiles ?? []).find((p) => p.id === s.owner_id)?.display_name ?? "?";
     const sLogs = (peerLogs ?? []).filter((l) => l.streak_id === s.id);
-    return { name: ownerName, count: currentStreak(sLogs) };
+    return {
+      name: ownerName,
+      count: computeStreakState(sLogs, s.freezes_per_month).count,
+    };
   });
 
   const now = new Date();
@@ -133,6 +135,7 @@ export default async function StreakDetailPage({ params }: PageProps) {
           year={now.getFullYear()}
           monthIdx={now.getMonth()}
           logs={logs}
+          virtuallyFrozenDates={virtuallyFrozenDates}
         />
       </div>
 

@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { currentStreak, loggedToday, type StreakLog } from "@/lib/streak";
+import {
+  computeStreakState,
+  loggedToday,
+  type StreakLog,
+} from "@/lib/streak";
 import { LogTodayButton } from "./log-today-button";
 
 export type PeerProgress = {
@@ -17,7 +21,7 @@ export function StreakCard({
   logs: StreakLog[];
   peers: PeerProgress[];
 }) {
-  const count = currentStreak(logs);
+  const { count } = computeStreakState(logs, streak.freezes_per_month);
   const checkedIn = loggedToday(logs);
 
   return (
