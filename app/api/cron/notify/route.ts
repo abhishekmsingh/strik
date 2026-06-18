@@ -7,7 +7,12 @@ import {
   localHourIn,
   type Slot,
 } from "@/lib/notify";
-import { computeStreakState, loggedToday, type StreakLog } from "@/lib/streak";
+import {
+  computeStreakState,
+  loggedToday,
+  toDateKey,
+  type StreakLog,
+} from "@/lib/streak";
 
 // web-push uses node:crypto + https
 export const runtime = "nodejs";
@@ -28,6 +33,7 @@ type Streak = {
   name: string;
   reminder_hour: number;
   freezes_per_month: number;
+  created_at: string;
 };
 
 type LogRow = StreakLog & { streak_id: string };
@@ -68,7 +74,7 @@ export async function GET(request: Request) {
 
   const { data: streaksData } = await supabase
     .from("streaks")
-    .select("id, owner_id, name, reminder_hour, freezes_per_month")
+    .select("id, owner_id, name, reminder_hour, freezes_per_month, created_at")
     .in("owner_id", userIds)
     .is("archived_at", null);
   const streaks = (streaksData ?? []) as Streak[];
@@ -85,11 +91,11 @@ export async function GET(request: Request) {
   if (streakIds.length > 0) {
     const { data: logsData } = await supabase
       .from("streak_logs")
-      .select("streak_id, log_date, status")
+      .select("streak_id, log_date")
       .in("streak_id", streakIds);
     for (const l of (logsData ?? []) as LogRow[]) {
       const arr = logsByStreak.get(l.streak_id) ?? [];
-      arr.push({ log_date: l.log_date, status: l.status });
+      arr.push({ log_date: l.log_date });
       logsByStreak.set(l.streak_id, arr);
     }
   }
@@ -111,7 +117,12 @@ export async function GET(request: Request) {
       const logs = logsByStreak.get(streak.id) ?? [];
       const slot = chooseSlot(hour, streak.reminder_hour, loggedToday(logs));
       if (!slot) continue;
-      const { count } = computeStreakState(logs, streak.freezes_per_month);
+      const start = toDateKey(new Date(streak.created_at));
+      const { count } = computeStreakState(
+        logs,
+        streak.freezes_per_month,
+        start,
+      );
       const payload = buildPayload({
         slot,
         streakId: streak.id,

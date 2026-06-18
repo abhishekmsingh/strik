@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   computeStreakState,
   loggedToday,
+  toDateKey,
   type StreakLog,
 } from "@/lib/streak";
 import { LogTodayButton } from "./log-today-button";
@@ -17,11 +18,17 @@ export function StreakCard({
   logs,
   peers,
 }: {
-  streak: { id: string; name: string; freezes_per_month: number };
+  streak: {
+    id: string;
+    name: string;
+    freezes_per_month: number;
+    created_at: string;
+  };
   logs: StreakLog[];
   peers: PeerProgress[];
 }) {
-  const { count } = computeStreakState(logs, streak.freezes_per_month);
+  const start = toDateKey(new Date(streak.created_at));
+  const { count } = computeStreakState(logs, streak.freezes_per_month, start);
   const checkedIn = loggedToday(logs);
 
   return (

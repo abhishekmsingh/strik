@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   computeStreakState,
   loggedToday,
+  toDateKey,
   type StreakLog,
 } from "@/lib/streak";
 import { LogTodayButton } from "@/components/log-today-button";
@@ -24,28 +25,31 @@ export default async function StreakDetailPage({ params }: PageProps) {
 
   const { data: streak } = await supabase
     .from("streaks")
-    .select("id, name, freezes_per_month, reminder_hour, shared_streak_id, owner_id")
+    .select(
+      "id, name, freezes_per_month, reminder_hour, shared_streak_id, owner_id, created_at",
+    )
     .eq("id", id)
     .maybeSingle();
   if (!streak) notFound();
 
   const isOwner = streak.owner_id === user.id;
+  const streakStart = toDateKey(new Date(streak.created_at));
 
   const { data: logsData } = await supabase
     .from("streak_logs")
-    .select("log_date, status")
+    .select("log_date")
     .eq("streak_id", id)
     .order("log_date", { ascending: false });
   const logs = (logsData ?? []) as StreakLog[];
 
   const { count, freezesUsedThisMonth: freezesUsed, virtuallyFrozenDates } =
-    computeStreakState(logs, streak.freezes_per_month);
+    computeStreakState(logs, streak.freezes_per_month, streakStart);
   const checkedIn = loggedToday(logs);
 
   // peers on the shared streak
   const { data: peerStreaks } = await supabase
     .from("streaks")
-    .select("id, owner_id, freezes_per_month")
+    .select("id, owner_id, freezes_per_month, created_at")
     .eq("shared_streak_id", streak.shared_streak_id)
     .neq("owner_id", user.id);
   const peerIds = (peerStreaks ?? []).map((s) => s.owner_id);
@@ -55,9 +59,11 @@ export default async function StreakDetailPage({ params }: PageProps) {
     peerStreakIds.length > 0
       ? supabase
           .from("streak_logs")
-          .select("streak_id, log_date, status")
+          .select("streak_id, log_date")
           .in("streak_id", peerStreakIds)
-      : Promise.resolve({ data: [] as { streak_id: string; log_date: string; status: StreakLog["status"] }[] });
+      : Promise.resolve({
+          data: [] as { streak_id: string; log_date: string }[],
+        });
   const peerProfilesPromise =
     peerIds.length > 0
       ? supabase.from("profiles").select("id, display_name").in("id", peerIds)
@@ -72,9 +78,10 @@ export default async function StreakDetailPage({ params }: PageProps) {
     const ownerName =
       (peerProfiles ?? []).find((p) => p.id === s.owner_id)?.display_name ?? "?";
     const sLogs = (peerLogs ?? []).filter((l) => l.streak_id === s.id);
+    const sStart = toDateKey(new Date(s.created_at));
     return {
       name: ownerName,
-      count: computeStreakState(sLogs, s.freezes_per_month).count,
+      count: computeStreakState(sLogs, s.freezes_per_month, sStart).count,
     };
   });
 

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { StreakCard, type PeerProgress } from "@/components/streak-card";
 import { PushBanner } from "@/components/push-banner";
 import { signOut } from "./sign-in/actions";
-import { computeStreakState, type StreakLog } from "@/lib/streak";
+import { computeStreakState, toDateKey, type StreakLog } from "@/lib/streak";
 
 type StreakRow = {
   id: string;
@@ -11,6 +11,7 @@ type StreakRow = {
   freezes_per_month: number;
   shared_streak_id: string;
   owner_id: string;
+  created_at: string;
 };
 
 type LogRow = StreakLog & { streak_id: string };
@@ -28,7 +29,7 @@ export default async function Home() {
   // All streaks visible to me (own + co-enrolled, per RLS).
   const { data: streaksData } = await supabase
     .from("streaks")
-    .select("id, name, freezes_per_month, shared_streak_id, owner_id")
+    .select("id, name, freezes_per_month, shared_streak_id, owner_id, created_at")
     .is("archived_at", null)
     .order("created_at", { ascending: true });
   const allStreaks = (streaksData ?? []) as StreakRow[];
@@ -43,7 +44,7 @@ export default async function Home() {
   const streakIds = allStreaks.map((s) => s.id);
   const { data: logsData } = await supabase
     .from("streak_logs")
-    .select("streak_id, log_date, status")
+    .select("streak_id, log_date")
     .in("streak_id", streakIds);
   const allLogs = (logsData ?? []) as LogRow[];
 
@@ -114,9 +115,10 @@ function buildPeers(
   if (peerStreaks.length <= 1) return [];
   return peerStreaks.map((s) => {
     const logs = allLogs.filter((l) => l.streak_id === s.id);
+    const start = toDateKey(new Date(s.created_at));
     return {
       display_name: profiles.get(s.owner_id) ?? "?",
-      count: computeStreakState(logs, s.freezes_per_month).count,
+      count: computeStreakState(logs, s.freezes_per_month, start).count,
       is_self: s.owner_id === selfId,
     };
   });

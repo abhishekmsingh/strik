@@ -1,26 +1,29 @@
 /**
  * Streak math.
  *
- * Day boundary is local midnight (per spec). A log row exists per (streak, day)
- * with status: 'done' | 'freeze' | 'missed'. Streak counts consecutive non-missed
- * days walking backward from today. If today has no log, today is *not yet broken*
- * (the user still has until midnight) — we treat today as a soft boundary.
+ * A streak_log row exists per (streak, day) that the user checked in. The DB
+ * schema's CHECK constraint still allows {'done','freeze','missed'} from
+ * earlier iterations, but in practice we only ever insert 'done' — there's no
+ * UI for the other two — so this module treats every row as a check-in and
+ * never reads the column.
  *
- * Freeze budget (virtual): when walking backward we encounter a "gap day" (no
- * log row). If the streak has freezes available for that gap's calendar month,
- * we absorb the gap into the chain and count it as a virtual freeze. The user
- * never sees these as stored rows — they're computed on read, so changing the
- * budget rule never needs a backfill. The set of absorbed dates is returned so
- * the calendar can render them in the soft-lavender freeze style.
+ * Day boundary is local midnight (per spec). The walk runs backward from
+ * today (or yesterday if today not yet logged):
+ *   - logged day  → +1
+ *   - gap day     → consume one freeze from this gap's calendar-month budget,
+ *                   +1; if budget exhausted, the chain breaks
+ *   - before the streak's start → break (no pretending the user "missed"
+ *                                 days that pre-date the streak)
+ *
+ * Freezes are virtual — nothing persists. The set of dates the walk absorbed
+ * is returned so the calendar can paint them in the soft-lavender freeze
+ * style.
  */
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-export type LogStatus = "done" | "freeze" | "missed";
-
 export type StreakLog = {
   log_date: string; // 'YYYY-MM-DD'
-  status: LogStatus;
 };
 
 export type StreakState = {
@@ -52,17 +55,19 @@ function monthKey(d: Date): string {
 
 /**
  * Walk backward from today, applying virtual freezes to gap days when budget
- * remains in that gap's calendar month. Returns:
- *   - count: current streak length
- *   - freezesUsedThisMonth: freezes consumed in the *current* calendar month
- *   - virtuallyFrozenDates: dates absorbed by the budget (for visualisation)
+ * remains in that gap's calendar month. Stops at `streakStartDate` so days
+ * before the streak existed never burn budget.
+ *
+ * `streakStartDate` is the YYYY-MM-DD floor — usually `toDateKey(new
+ * Date(streak.created_at))`. When omitted the walk has no floor (previous
+ * behavior).
  */
 export function computeStreakState(
   logs: StreakLog[],
   freezesPerMonth: number,
+  streakStartDate?: string,
 ): StreakState {
-  const byDate = new Map<string, LogStatus>();
-  for (const l of logs) byDate.set(l.log_date, l.status);
+  const byDate = new Set<string>(logs.map((l) => l.log_date));
 
   const today = todayKey();
   const cursor = new Date();
@@ -72,23 +77,20 @@ export function computeStreakState(
     cursor.setDate(cursor.getDate() - 1);
   }
 
-  // Per-month budget tracker scoped to this walk.
   const usedByMonth = new Map<string, number>();
   const virtuallyFrozen = new Set<string>();
 
   let count = 0;
   for (;;) {
     const key = toDateKey(cursor);
-    const status = byDate.get(key);
 
-    if (status === "done" || status === "freeze") {
-      // Stored row that extends the chain.
+    // Don't walk past the day the streak started — those days aren't gaps,
+    // they pre-date the existence of the streak.
+    if (streakStartDate && key < streakStartDate) break;
+
+    if (byDate.has(key)) {
       count += 1;
-    } else if (status === "missed") {
-      // Explicit "missed" is a hard break — user-asserted.
-      break;
     } else {
-      // Gap day. Absorb with this gap's month budget if available.
       const m = monthKey(cursor);
       const used = usedByMonth.get(m) ?? 0;
       if (used < freezesPerMonth) {
@@ -109,20 +111,21 @@ export function computeStreakState(
 }
 
 /**
- * Convenience wrapper for callsites that only need the count and the freeze
- * budget isn't material (e.g. an older record that pre-dates freezes). Defaults
- * to 0 budget so the behavior matches the original walk semantics.
+ * Convenience wrapper for callsites that only need the count and where the
+ * floor doesn't matter (older code paths). Newer callers should prefer
+ * `computeStreakState` directly and pass `streakStartDate`.
  */
 export function currentStreak(
   logs: StreakLog[],
   freezesPerMonth = 0,
+  streakStartDate?: string,
 ): number {
-  return computeStreakState(logs, freezesPerMonth).count;
+  return computeStreakState(logs, freezesPerMonth, streakStartDate).count;
 }
 
 export function loggedToday(logs: StreakLog[]): boolean {
   const t = todayKey();
-  return logs.some((l) => l.log_date === t && l.status === "done");
+  return logs.some((l) => l.log_date === t);
 }
 
 /** Calendar grid for the given month (Sunday-start). Returns 6 weeks. */
